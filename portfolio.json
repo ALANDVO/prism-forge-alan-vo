@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "name": "prism-forge-alan-vo",
+  "owner": "ALANDVO",
+  "email": "alanvo@gmail.com",
+  "domain": "AI/ML developer tools",
+  "summary": "Work in progress: prism-forge-alan-vo",
+  "workflows": [
+    "Create and manage isolated agents with dedicated workspaces",
+    "Read, write, and list files within agent workspaces",
+    "Multi-user authentication via OIDC/Keycloak with demo mode"
+  ],
+  "auth": "oidc-keycloak-saml-broker",
+  "llm_providers": [
+    "openai-compatible",
+    "anthropic",
+    "gemini",
+    "ollama"
+  ],
+  "status": "work-in-progress"
+}
