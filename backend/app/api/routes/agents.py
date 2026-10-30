@@ -2,13 +2,50 @@ from typing import Optional
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+import json
 
 from app.core.database import get_db_session
 from app.services.agent_service import AgentService, WorkspaceError
 from app.core.security import get_current_user, User
 
 router = APIRouter(prefix="/api/agents", tags=["agents"])
+
+
+class AgentLLMConfig(BaseModel):
+    """Validated LLM configuration for an agent."""
+    provider: str = Field(default="openai-compatible", description="LLM provider")
+    model: str = Field(..., min_length=1, description="Model name")
+    api_key: str = Field(default="", description="API key (optional, can use global)")
+    base_url: str = Field(default="", description="Base URL for provider API")
+    temperature: float = Field(default=0.7, ge=0.0, le=2.0, description="Sampling temperature")
+    max_tokens: int | None = Field(default=None, gt=0, description="Max tokens in response")
+
+    @field_validator("provider")
+    @classmethod
+    def validate_provider(cls, v: str) -> str:
+        allowed = {"openai", "openai-compatible", "litellm", "openrouter", "ollama", "anthropic", "claude", "gemini", "google"}
+        if v.lower() not in allowed:
+            raise ValueError(f"Unknown provider: {v}. Allowed: {', '.join(sorted(allowed))}")
+        return v.lower()
+
+    @field_validator("model")
+    @classmethod
+    def validate_model(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("Model name cannot be empty")
+        return v.strip()
+
+
+def parse_model_config(config_json: str | None) -> AgentLLMConfig:
+    """Parse and validate model_config JSON string."""
+    if not config_json or not config_json.strip():
+        return AgentLLMConfig(provider="openai-compatible", model="")
+    try:
+        data = json.loads(config_json)
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Invalid JSON in model_config: {e}")
+    return AgentLLMConfig(**data)
 
 
 class AgentCreate(BaseModel):
@@ -20,6 +57,13 @@ class AgentCreate(BaseModel):
     system_prompt: Optional[str] = None
     model_config_json: Optional[str] = None
 
+    @field_validator("model_config_json")
+    @classmethod
+    def validate_model_config(cls, v: str | None) -> str | None:
+        if v is not None:
+            parse_model_config(v)
+        return v
+
 
 class AgentUpdate(BaseModel):
     model_config = {"protected_namespaces": ()}
@@ -30,6 +74,12 @@ class AgentUpdate(BaseModel):
     model_config_json: Optional[str] = None
     is_active: Optional[bool] = None
 
+    @field_validator("model_config_json")
+    @classmethod
+    def validate_model_config(cls, v: str | None) -> str | None:
+        if v is not None:
+            parse_model_config(v)
+        return v
 
 class AgentResponse(BaseModel):
     model_config = {"protected_namespaces": (), "from_attributes": True}
@@ -39,7 +89,7 @@ class AgentResponse(BaseModel):
     description: Optional[str]
     workspace_path: str
     system_prompt: Optional[str]
-    model_config: Optional[str]
+    model_config_json: Optional[str] = Field(default=None, alias="model_config")
     is_active: bool
     created_at: datetime
     updated_at: datetime

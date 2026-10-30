@@ -175,3 +175,93 @@ async def test_agent_file_operations(client: AsyncClient):
     assert len(files) == 1
     assert files[0]["name"] == "note1.txt"
     assert files[0]["is_dir"] is False
+
+
+@pytest.mark.asyncio
+async def test_create_agent_with_valid_model_config(client: AsyncClient):
+    """Test creating an agent with valid model_config_json."""
+    response = await client.post(
+        "/api/agents",
+        json={
+            "name": "Agent With Config",
+            "workspace_path": "./agent-config",
+            "model_config_json": '{"provider": "openai-compatible", "model": "gpt-4", "temperature": 0.5}',
+        },
+    )
+    assert response.status_code == 201
+    data = response.json()
+    assert data["name"] == "Agent With Config"
+    # model_config is stored as JSON string
+    import json
+    config = json.loads(data["model_config"])
+    assert config["provider"] == "openai-compatible"
+    assert config["model"] == "gpt-4"
+    assert config["temperature"] == 0.5
+
+
+@pytest.mark.asyncio
+async def test_create_agent_with_invalid_json_config(client: AsyncClient):
+    """Test that invalid JSON in model_config_json is rejected."""
+    response = await client.post(
+        "/api/agents",
+        json={
+            "name": "Bad Config Agent",
+            "workspace_path": "./bad-config",
+            "model_config_json": "{invalid json}",
+        },
+    )
+    assert response.status_code == 422
+    errors = response.json()["detail"]
+    assert any("Invalid JSON" in e.get("msg", "") for e in errors)
+
+
+@pytest.mark.asyncio
+async def test_create_agent_with_invalid_provider(client: AsyncClient):
+    """Test that unknown provider is rejected."""
+    response = await client.post(
+        "/api/agents",
+        json={
+            "name": "Bad Provider Agent",
+            "workspace_path": "./bad-provider",
+            "model_config_json": '{"provider": "unknown-provider", "model": "gpt-4"}',
+        },
+    )
+    assert response.status_code == 422
+    errors = response.json()["detail"]
+    assert any("Unknown provider" in e.get("msg", "") for e in errors)
+
+
+@pytest.mark.asyncio
+async def test_create_agent_with_empty_model(client: AsyncClient):
+    """Test that empty model name is rejected."""
+    response = await client.post(
+        "/api/agents",
+        json={
+            "name": "Empty Model Agent",
+            "workspace_path": "./empty-model",
+            "model_config_json": '{"provider": "openai-compatible", "model": ""}',
+        },
+    )
+    assert response.status_code == 422
+    errors = response.json()["detail"]
+    assert any("Model name cannot be empty" in e.get("msg", "") or "String should have at least 1 character" in e.get("msg", "") for e in errors)
+
+
+@pytest.mark.asyncio
+async def test_update_agent_with_invalid_config(client: AsyncClient):
+    """Test updating an agent with invalid model_config_json."""
+    # Create agent first
+    create_resp = await client.post(
+        "/api/agents",
+        json={"name": "Update Test", "workspace_path": "./update-test"},
+    )
+    agent_id = create_resp.json()["id"]
+
+    # Try to update with invalid config
+    response = await client.patch(
+        f"/api/agents/{agent_id}",
+        json={"model_config_json": '{"provider": "bad-provider", "model": "gpt-4"}'},
+    )
+    assert response.status_code == 422
+    errors = response.json()["detail"]
+    assert any("Unknown provider" in e.get("msg", "") for e in errors)
