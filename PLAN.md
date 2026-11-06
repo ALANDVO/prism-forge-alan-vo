@@ -4,7 +4,7 @@ Each round completes one feature or repair. Future items are planned, not implem
 
 ## Current round
 
-skeleton-fastapi-react
+llm-chat-integration
 
 ## Roadmap
 
@@ -65,4 +65,18 @@ Acceptance:
 - Connection pool configured with check= probe
 - Explicit max_lifetime configured
 - Retry logic for transient connection errors
+
+### llm-chat-integration — LLM chat integration for agents (issue #NEW)
+
+Status: done
+
+Acceptance:
+- AgentService.chat_with_llm method sends chat completions using agent's configured LLM
+- POST /api/agents/{id}/chat endpoint accepts messages and returns LLM response
+- Frontend API client includes chat types and send function
+- Error handling for missing agent, missing model config, invalid message roles
+
+Implementation: `backend/app/services/agent_service.py`, `backend/app/api/routes/agents.py`, `frontend/src/api/client.ts`
+
+Tests: `backend/tests/test_agents.py::test_chat_with_nonexistent_agent`, `backend/tests/test_agents.py::test_chat_with_agent_no_model_config`, `backend/tests/test_agents.py::test_chat_with_invalid_message_role`
 

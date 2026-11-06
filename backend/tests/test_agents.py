@@ -265,3 +265,40 @@ async def test_update_agent_with_invalid_config(client: AsyncClient):
     assert response.status_code == 422
     errors = response.json()["detail"]
     assert any("Unknown provider" in e.get("msg", "") for e in errors)
+@pytest.mark.asyncio
+async def test_chat_with_nonexistent_agent(client: AsyncClient):
+    """Test 404 when chatting with nonexistent agent."""
+    response = await client.post(
+        "/api/agents/99999/chat",
+        json={"messages": [{"role": "user", "content": "Hello"}]},
+    )
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_chat_with_agent_no_model_config(client: AsyncClient):
+    """Test 404 when agent has no model configured."""
+    # Create agent without model config
+    response = await client.post(
+        "/api/agents",
+        json={"name": "No Model Agent", "workspace_path": "./no-model"},
+    )
+    assert response.status_code == 201
+    agent_id = response.json()["id"]
+
+    response = await client.post(
+        f"/api/agents/{agent_id}/chat",
+        json={"messages": [{"role": "user", "content": "Hello"}]},
+    )
+    assert response.status_code == 404
+    assert "no llm model configured" in response.json()["detail"].lower()
+
+
+@pytest.mark.asyncio
+async def test_chat_with_invalid_message_role(client: AsyncClient):
+    """Test 422 when message role is invalid."""
+    response = await client.post(
+        "/api/agents/1/chat",
+        json={"messages": [{"role": "invalid", "content": "Hello"}]},
+    )
+    assert response.status_code == 422

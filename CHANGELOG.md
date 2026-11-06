@@ -1,6 +1,20 @@
 # Changelog
 
+## 1.2.0 — work-in-progress checkpoint
+
+Partial code published for continued development. Known issues: STATUS.md.
+
 ## 1.1.0 — work-in-progress checkpoint
+
+Partial code published for continued development. Known issues: STATUS.md.
+
+### Added
+- LLM chat integration for agents with provider-agnostic adapters
+- POST /api/agents/{id}/chat endpoint for chat completions
+- Frontend API client types and functions for chat
+- Backend tests for chat endpoint (3 new tests)
+
+### Security
 
 Partial code published for continued development. Known issues: STATUS.md.
 
@@ -32,6 +46,6 @@ All notable changes to this project will be documented in this file.
 - No hardcoded secrets or credentials
 
 ### Testing
-- Backend: 11 passing tests (health, agents CRUD, workspace isolation, file operations)
+- Backend: 19 passing tests (health, agents CRUD, workspace isolation, file operations, LLM chat)
 - Frontend: 5 passing tests (AgentList component)
 - TypeScript typecheck and build pass

@@ -85,6 +85,21 @@ export interface HealthResponse {
   database: string;
   demo_mode: boolean;
 }
+export interface ChatMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+export interface ChatRequest {
+  messages: ChatMessage[];
+  temperature?: number;
+  max_tokens?: number;
+}
+
+export interface ChatResponse {
+  content: string;
+  usage?: Record<string, number> | null;
+}
 
 // API functions
 export const api = {
@@ -130,4 +145,12 @@ export const api = {
         }),
     },
   },
+
+    chat: {
+      send: (agentId: number, data: ChatRequest) =>
+        request<ChatResponse>(`/agents/${agentId}/chat`, {
+          method: 'POST',
+          body: JSON.stringify(data),
+        }),
+    },
 };

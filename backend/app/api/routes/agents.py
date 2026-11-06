@@ -97,7 +97,6 @@ class AgentListResponse(BaseModel):
     agents: list[AgentResponse]
     total: int
 
-
 class FileReadResponse(BaseModel):
     path: str
     content: str
@@ -116,6 +115,21 @@ class FileWriteResponse(BaseModel):
 class FileListResponse(BaseModel):
     files: list[dict]
 
+
+class ChatMessage(BaseModel):
+    role: str = Field(..., pattern="^(system|user|assistant)$")
+    content: str
+
+
+class ChatRequest(BaseModel):
+    messages: list[ChatMessage]
+    temperature: float | None = Field(default=None, ge=0.0, le=2.0)
+    max_tokens: int | None = Field(default=None, gt=0)
+
+
+class ChatResponse(BaseModel):
+    content: str
+    usage: dict | None = None
 
 @router.post("", response_model=AgentResponse, status_code=status.HTTP_201_CREATED)
 async def create_agent(
@@ -251,3 +265,32 @@ async def write_agent_file(
     except WorkspaceError as e:
         raise HTTPException(status_code=403, detail=str(e))
     return FileWriteResponse(path=data.path, size=len(data.content.encode("utf-8")))
+@router.post("/{agent_id}/chat", response_model=ChatResponse)
+async def chat_with_agent(
+    agent_id: int,
+    data: ChatRequest,
+    session: AsyncSession = Depends(get_db_session),
+    current_user: User = Depends(get_current_user),
+) -> ChatResponse:
+    """Send a chat completion request using the agent's configured LLM."""
+    service = AgentService(session)
+    try:
+        # Convert ChatMessage to LLMMessage
+        from app.llm.base import LLMMessage
+        messages = [LLMMessage(role=m.role, content=m.content) for m in data.messages]
+
+        # Prepare optional kwargs
+        kwargs = {}
+        if data.temperature is not None:
+            kwargs["temperature"] = data.temperature
+        if data.max_tokens is not None:
+            kwargs["max_tokens"] = data.max_tokens
+
+        content, usage = await service.chat_with_llm(agent_id, messages, **kwargs)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        # Catch LLMProviderError and other provider errors
+        raise HTTPException(status_code=502, detail=f"LLM provider error: {e}")
+
+    return ChatResponse(content=content, usage=usage)
