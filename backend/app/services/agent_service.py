@@ -1,10 +1,12 @@
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.agent import Agent
 from app.core.config import get_settings
+from app.llm.factory import create_llm_adapter
+from app.llm.base import LLMMessage
 
 
 class WorkspaceError(Exception):
@@ -87,6 +89,62 @@ class AgentService:
         query = query.order_by(Agent.created_at.desc())
         result = await self.session.execute(query)
         return list(result.scalars().all())
+
+    async def chat_with_llm(
+        self,
+        agent_id: int,
+        messages: list[LLMMessage],
+        **kwargs: Any,
+    ) -> tuple[str, dict | None]:
+        """
+        Send a chat completion request using the agent's configured LLM.
+
+        Args:
+            agent_id: ID of the agent
+            messages: List of conversation messages
+            **kwargs: Additional chat parameters (temperature, max_tokens, etc.)
+
+        Returns:
+            Tuple of (response content, usage dict or None)
+
+        Raises:
+            ValueError: If agent not found or LLM not configured
+        """
+        agent = await self.get_agent(agent_id)
+        if not agent:
+            raise ValueError(f"Agent {agent_id} not found")
+
+        # Parse model config
+        import json
+        try:
+            config_data = json.loads(agent.model_config or "{}")
+        except json.JSONDecodeError:
+            config_data = {}
+
+        if not config_data.get("model"):
+            raise ValueError(f"Agent {agent_id} has no LLM model configured")
+
+        # Create adapter
+        adapter = create_llm_adapter(
+            provider=config_data.get("provider", "openai-compatible"),
+            model=config_data["model"],
+            api_key=config_data.get("api_key") or self.settings.llm_api_key,
+            base_url=config_data.get("base_url") or self.settings.llm_base_url,
+        )
+
+        # Prepare chat kwargs from config
+        chat_kwargs = {}
+        if "temperature" in config_data:
+            chat_kwargs["temperature"] = config_data["temperature"]
+        if "max_tokens" in config_data:
+            chat_kwargs["max_tokens"] = config_data["max_tokens"]
+        chat_kwargs.update(kwargs)
+
+        try:
+            response = await adapter.chat(messages, **chat_kwargs)
+            return response.content, response.usage
+        finally:
+            await adapter.close()
 
     async def update_agent(
         self,
