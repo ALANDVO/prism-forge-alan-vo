@@ -80,3 +80,6 @@ Implementation: `backend/app/services/agent_service.py`, `backend/app/api/routes
 
 Tests: `backend/tests/test_agents.py::test_chat_with_nonexistent_agent`, `backend/tests/test_agents.py::test_chat_with_agent_no_model_config`, `backend/tests/test_agents.py::test_chat_with_invalid_message_role`
 
+---
+
+Alan Vo · [alanvo.net](https://alanvo.net)

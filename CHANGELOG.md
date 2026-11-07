@@ -49,3 +49,7 @@ All notable changes to this project will be documented in this file.
 - Backend: 19 passing tests (health, agents CRUD, workspace isolation, file operations, LLM chat)
 - Frontend: 5 passing tests (AgentList component)
 - TypeScript typecheck and build pass
+
+---
+
+Alan Vo · [alanvo.net](https://alanvo.net)
