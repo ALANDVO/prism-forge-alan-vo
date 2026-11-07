@@ -82,4 +82,4 @@ Tests: `backend/tests/test_agents.py::test_chat_with_nonexistent_agent`, `backen
 
 ---
 
-Alan Vo · [alanvo.net](https://alanvo.net)
+Alan Vo · [alanvo.net](https://alanvo.net) · [X: @alanvoasi](https://x.com/alanvoasi)
