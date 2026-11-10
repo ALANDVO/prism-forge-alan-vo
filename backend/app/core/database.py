@@ -56,5 +56,9 @@ async def get_db_session() -> AsyncSession:
         except Exception:
             await session.rollback()
             raise
-        finally:
-            await session.close()
+    await session.close()
+
+
+def get_async_session_factory():
+    """Return the async session factory for MCP server."""
+    return AsyncSessionLocal

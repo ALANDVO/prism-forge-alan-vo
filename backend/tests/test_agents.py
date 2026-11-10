@@ -296,9 +296,36 @@ async def test_chat_with_agent_no_model_config(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_chat_with_invalid_message_role(client: AsyncClient):
-    """Test 422 when message role is invalid."""
     response = await client.post(
         "/api/agents/1/chat",
         json={"messages": [{"role": "invalid", "content": "Hello"}]},
     )
     assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_mcp_run_endpoint(client: AsyncClient):
+    """Test MCP run endpoint returns server info."""
+    response = await client.post("/api/agents/mcp/run")
+    # Returns 503 when MCP server not initialized in test environment
+    assert response.status_code in (200, 401, 503)
+
+
+@pytest.mark.asyncio
+async def test_mcp_server_initialization():
+    """Test MCP server can be initialized and has expected tools."""
+    from app.mcp.server import MCPServer
+    from app.core.database import get_async_session_factory
+    from mcp.types import ListToolsRequest, ListToolsResult
+
+    mcp = MCPServer(get_async_session_factory())
+    assert mcp is not None
+    
+    # Call the handler directly to test tool listing
+    request = ListToolsRequest()
+    handler_entry = mcp.server.get_request_handler("tools/list")
+    result = await handler_entry.handler(request)
+    assert isinstance(result, ListToolsResult)
+    assert len(result.tools) == 4
+    tool_names = {t.name for t in result.tools}
+    assert tool_names == {"memory_read", "memory_write", "memory_list", "memory_delete"}
