@@ -1,8 +1,19 @@
 # Changelog
 
+## 1.3.0 — work-in-progress checkpoint
+
+Partial code published for continued development. Known issues: STATUS.md.
+
 ## 1.2.0 — work-in-progress checkpoint
 
 Partial code published for continued development. Known issues: STATUS.md.
+
+### Added
+- MCP (Model Context Protocol) server for agent memory system
+- Four memory tools: memory_read, memory_write, memory_list, memory_delete
+- MCP server runs over stdio for external AI integration
+- POST /api/agents/mcp/run endpoint for server info
+- Backend tests for MCP server initialization and endpoint
 
 ## 1.1.0 — work-in-progress checkpoint
 

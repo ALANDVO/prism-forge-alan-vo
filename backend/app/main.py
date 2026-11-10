@@ -4,9 +4,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.core.config import get_settings
-from app.core.database import init_db, close_db
+from app.core.database import init_db, close_db, get_async_session_factory
 from app.api.routes import health, agents
 from app.models.agent import Agent  # Ensure model is registered
+from app.mcp.server import mcp_server, MCPServer
 
 
 @asynccontextmanager
@@ -24,9 +25,12 @@ async def lifespan(app: FastAPI):
     os.makedirs(data_dir, exist_ok=True)
     workspace_dir = os.path.join(data_dir, "workspaces")
     os.makedirs(workspace_dir, exist_ok=True)
-
     # Initialize database
     await init_db()
+
+    # Initialize MCP server
+    global mcp_server
+    mcp_server = MCPServer(get_async_session_factory())
 
     yield
 

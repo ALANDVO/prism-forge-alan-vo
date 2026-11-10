@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "current_feature": "llm-chat-integration",
+  "current_feature": "mcp-tool-exposure",
   "features": [
     {
       "id": "skeleton-fastapi-react",
@@ -68,14 +68,23 @@
     {
       "id": "mcp-tool-exposure",
       "title": "MCP tool exposure for agent memory system (issue #322)",
-      "status": "planned",
+      "status": "in_progress",
       "acceptance": [
         "MCP server exposes agent memory tools",
         "External AI can call tools via MCP protocol",
         "Tools work independently of main UI"
       ],
-      "implementation": [],
-      "tests": []
+      "implementation": [
+        "backend/app/mcp/__init__.py",
+        "backend/app/mcp/server.py",
+        "backend/app/main.py",
+        "backend/app/api/routes/agents.py",
+        "backend/app/core/database.py"
+      ],
+      "tests": [
+        "backend/tests/test_agents.py::test_mcp_run_endpoint",
+        "backend/tests/test_agents.py::test_mcp_server_initialization"
+      ]
     },
     {
       "id": "onnxruntime-windows-compat",

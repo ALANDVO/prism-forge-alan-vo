@@ -292,5 +292,20 @@ async def chat_with_agent(
     except Exception as e:
         # Catch LLMProviderError and other provider errors
         raise HTTPException(status_code=502, detail=f"LLM provider error: {e}")
-
     return ChatResponse(content=content, usage=usage)
+
+
+@router.post("/mcp/run", response_model=dict)
+async def run_mcp_server(
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    """Run the MCP server over stdio. This endpoint is meant to be called by MCP clients."""
+    from app.mcp.server import mcp_server
+    if mcp_server is None:
+        raise HTTPException(status_code=503, detail="MCP server not initialized")
+    # Note: This endpoint documents the MCP server capability.
+    # The actual stdio server runs via: python -m app.mcp.server
+    return {
+        "message": "MCP server available. Run via: python -m app.mcp.server",
+        "tools": ["memory_read", "memory_write", "memory_list", "memory_delete"],
+    }

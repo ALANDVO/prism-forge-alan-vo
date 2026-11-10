@@ -4,7 +4,7 @@ Each round completes one feature or repair. Future items are planned, not implem
 
 ## Current round
 
-llm-chat-integration
+mcp-tool-exposure
 
 ## Roadmap
 
@@ -41,12 +41,16 @@ Tests: `backend/tests/test_agents.py::test_agent_workspace_isolation`, `backend/
 
 ### mcp-tool-exposure — MCP tool exposure for agent memory system (issue #322)
 
-Status: planned
+Status: in_progress
 
 Acceptance:
 - MCP server exposes agent memory tools
 - External AI can call tools via MCP protocol
 - Tools work independently of main UI
+
+Implementation: `backend/app/mcp/__init__.py`, `backend/app/mcp/server.py`, `backend/app/main.py`, `backend/app/api/routes/agents.py`, `backend/app/core/database.py`
+
+Tests: `backend/tests/test_agents.py::test_mcp_run_endpoint`, `backend/tests/test_agents.py::test_mcp_server_initialization`
 
 ### onnxruntime-windows-compat — Defensive onnxruntime/fastembed loading for Windows compatibility (issue #2072)
 
