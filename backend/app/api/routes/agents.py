@@ -309,3 +309,47 @@ async def run_mcp_server(
         "message": "MCP server available. Run via: python -m app.mcp.server",
         "tools": ["memory_read", "memory_write", "memory_list", "memory_delete"],
     }
+
+@router.post("/tools/call", response_model=dict)
+async def call_mcp_tool(
+    tool_name: str = Query(..., description="Name of the MCP tool to call"),
+    arguments: str = Query(..., description="JSON string of arguments for the tool"),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    """Call an MCP tool via HTTP.
+    
+    External AI systems can call the memory tools (memory_read, memory_write, 
+    memory_list, memory_delete) through this endpoint.
+    """
+    from app.mcp.server import mcp_server
+    
+    if mcp_server is None:
+        raise HTTPException(status_code=503, detail="MCP server not initialized")
+    
+    # Valid tool names
+    valid_tools = {"memory_read", "memory_write", "memory_list", "memory_delete"}
+    if tool_name not in valid_tools:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Invalid tool name: {tool_name}. Valid tools: {', '.join(valid_tools)}"
+        )
+    
+    # Parse arguments
+    try:
+        args = json.loads(arguments)
+    except json.JSONDecodeError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid JSON in arguments: {e}")
+    
+    # Create a CallToolRequest and use the handler
+    from mcp.types import CallToolRequest
+    request = CallToolRequest(params={"name": tool_name, "arguments": args})
+    
+    handler_entry = mcp_server.server.get_request_handler("tools/call")
+    result = await handler_entry.handler(request)
+    
+    # Convert result to dict
+    if result.isError:
+        return {"error": result.content[0].text if result.content else "Unknown error"}
+    
+    text_content = result.content[0].text if result.content else ""
+    return {"result": text_content, "tool": tool_name}
