@@ -72,6 +72,10 @@ class AgentService:
         workspace_root = self._resolve_workspace_root(agent)
         workspace_root.mkdir(parents=True, exist_ok=True)
 
+        # Create .memory directory within workspace
+        memory_dir = workspace_root / ".memory"
+        memory_dir.mkdir(parents=True, exist_ok=True)
+
         return agent
 
     async def get_agent(self, agent_id: int) -> Optional[Agent]:
